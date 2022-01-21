@@ -8,11 +8,11 @@ library(gtools)
 
 #---------------------------------------------------------------------------------
 # Produce rows 4 and 5, columns 3,4,5
-# Recommended settings for testing (These settings should take around 2h to run):
+# Recommended settings for testing:
         n=500                                 #Sample size
         B=1                                   #Number of posterior draws; setting it to 1 gives the frequentist fit
         R=2                                   #Number of replicates
-          #For better results set R=100       
+          #For better results set R=100       #This takes a few hours to run
         MM=1000                               #Note: this should not be too small
 #       Note: 
 #           1) MM=50000; R=500 is what was used in original simulations.
