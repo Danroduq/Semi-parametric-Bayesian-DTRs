@@ -17,8 +17,8 @@ library(gtools) #this library allows us to draw from the Dirichlet distribution
 #                                          1)Settings in original simulation:B=1; R=500  ~
 #                                          2)With these settings, the program should finish running in several hours
 #  (b) Recommended setting for testing row 9 and 10 in Table 1: 
-         #B=100 
-         #R=2
+         # B=100
+         # R=2
           #For better results set: R=100 (Runtime is several hours with this setting)
 #                                      Note:
 #                                           1) This takes several hours to run and gives a good approximation to the Bayesian results
@@ -70,7 +70,7 @@ extra_term_compute=function(A1,X1, Th1, Th2,extra=0){
 
 to_produce=function(Th1,Th2){
   #----------------------------
-  # This function produces replicates datasets for analysis
+  # This function produces replicate datasets for analysis
   #----------------------------
   dati=array(0,dim=c(n,9,R))
   dimnames(dati)[[2]]=c("X1","A1","A1_Opt","X2","A2","A2_Opt","Y","T1_ev","T3_ev")
@@ -120,7 +120,7 @@ val_eval=function(index,theta){
     T4_ev=apply(to,1,FUN=T3,epsilon=epsilon,Th2=Theta2)
 
     to=cbind(A1_regime,X1)
-    #T2_regime & T4_regime marginalize terms with patients following regime X2>Theta2 and A1 varying as in the study population 
+    #T2_regime & T4_regime marginalize terms with patients following regime X2>Theta2 and A1 varying according to the regime of interest
     T2_regime=pnorm(Theta2-A1_regime-0.5*X1,lower.tail=FALSE)
     T4_regime=apply(to,1,FUN=T3,epsilon=epsilon,Th2=Theta2)
     extract_g=extra_term_compute(A1=A1_regime,X1, Th1, Th2,extra=1)
@@ -174,7 +174,7 @@ val_eval=function(index,theta){
       AugY4=phi1_34+(C1_d)*(1/p1_d_24)*(phi2_34-phi1_34)+(C1_d)*(C2_d)*(1/(p2_d_24*p1_d_24))*(Y-phi2_34)
      
       #returning final values
-      IPW[o]=mean(richi*C1_d*C2_d*Y/(p1_d_24*p2_d_24))
+      IPW[o]=mean(richi*C1_d*C2_d*Y/(p1_d_24*p2_d_24)) #note that richi have been multiplied by n in the Bayesian case to cancel out the division by n in this mean
       DR_Vect4[o]=mean(richi*AugY4);
     }
     track_DR[i,]=DR_Vect4;DR_Vect4
@@ -205,11 +205,11 @@ DR_Est=array(0,dim=c(R,B,nrow(theta)))
 IPW_Est=array(0,dim=c(R,B,nrow(theta)))
 
 #iterating through each regime of interest
-for (i in 1:nrow(theta)){
+for (kk in 1:nrow(theta)){
      start_time <- Sys.time()
-    outi=val_eval(seq(1,nrow(theta))[i],theta)
-    DR_Est[,,i]=outi$track_DR
-    IPW_Est[,,i]=outi$track_IPW
+    outi=val_eval(seq(1,nrow(theta))[kk],theta)
+    DR_Est[,,kk]=outi$track_DR
+    IPW_Est[,,kk]=outi$track_IPW
     end_time <- Sys.time()
     print(end_time - start_time)
 }

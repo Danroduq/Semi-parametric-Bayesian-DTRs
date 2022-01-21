@@ -1,14 +1,13 @@
 rm(list=ls(all=TRUE))
-
 library(gtools)
 
 ##############################################################################################
-# Simulation I of "Bayesian Semi-parametric Inference for Dynamic Marginal Structural Models"
-# Authors: Daniel Rodriguez Duque, David A. Stephens, Erica E.M. Moodie, Marina Klein
+# Simulation II of "Bayesian Semi-parametric Inference for Dynamic Marginal Structural Models"
+# Authors: Daniel Rodriguez Duque, David A. Stephens, Erica E.M. Moodie, Marina B. Klein
 ##############################################################################################
 
 #---------------------------------------------------------------------------------
-# Produce rows 4 and 5, columns 3,4,5
+# Produce rows 4 and 5, columns 3,4,5 of Table 2
 # Recommended settings for testing:
         n=500                                 #Sample size
         B=1                                   #Number of posterior draws; setting it to 1 gives the frequentist fit
@@ -20,12 +19,13 @@ library(gtools)
 #           2) This program can also run Bayesian with B=500 simulation but this requires powerful computing system.
 #---------------------------------------------------------------------------------
 
-expit=function(x) 1 / (1 + exp(-x))
-  All_c3=function(X,epsilon31,epsilon32,Theta1,Theta2,Theta3,c3_data){
+  expit=function(x) 1 / (1 + exp(-x))
+        
+  All_c3=function(X,epsilon1_1,epsilon2_1,Theta1,Theta2,Theta3,c3_data){
     #---------------------------------------------------------------------------
-    # This is a helper function for C3_compute()
-    # This computes all  the stage 4 terms that are marginalized 
-    # conditional on information up to stage 3, with treatment being assigned
+    # This is a helper function for C3_compute(); C2_compute(); c1_compute()
+    # This computes all  the stage-specific terms that are marginalized 
+    # conditional on information up the previous stage, with treatment being assigned
     # according to theta1, theta2, theta3
     #---------------------------------------------------------------------------
     
@@ -34,23 +34,23 @@ expit=function(x) 1 / (1 + exp(-x))
     X32=c3_data[X,3]
     XX=c3_data[X,4]
     
-    A4_regime=(Theta1*(0.2*A3+0.1*X31+epsilon31)+
-                 Theta2*(0.5*A3+0.1*X32+epsilon32)+Theta3*XX)>0.5
+    A4_regime=(Theta1*(0.2*A3+0.1*X31+epsilon1_1)+
+                 Theta2*(0.5*A3+0.1*X32+epsilon2_1)+Theta3*XX)>0.5
     #term T9_c2
     T12_c3=-0.5*mean(A4_regime)
     #term T7B_c2
     T10B_c3=0.1*mean(XX*A4_regime)
     #term T7_c2
-    T10_c3=0.5*mean((0.2*A3+0.1*X31+epsilon31)*A4_regime)
+    T10_c3=0.5*mean((0.2*A3+0.1*X31+epsilon1_1)*A4_regime)
     #term T8_c2
-    T11_c3=0.5*mean((0.5*A3+0.1*X32+epsilon32)*A4_regime)
+    T11_c3=0.5*mean((0.5*A3+0.1*X32+epsilon2_1)*A4_regime)
     return(c(T10B_c3,T10_c3,T11_c3,T12_c3))
   }
-  All_c2=function(X,epsilon21, epsilon22, epsilon31,epsilon32, Theta1, Theta2, Theta3, c2_data){
+  All_c2=function(X,epsilon1_2, epsilon2_2, epsilon1_1,epsilon2_1, Theta1, Theta2, Theta3, c2_data){
     #---------------------------------------------------------------------------
-    # This is a helper function for C2_compute()
-    # This computes all  the stage 3 terms that are marginalized 
-    # conditional on information up to stage 2, with treatment being assigned
+    # This is a helper function for C2_compute(); c1_compute()
+    # This computes all  the stage-specific terms that are marginalized 
+    # conditional on information from two stages prior, with treatment being assigned
     # according to theta1, theta2, theta3
     #---------------------------------------------------------------------------
     A2=c2_data[X,1]
@@ -58,11 +58,11 @@ expit=function(x) 1 / (1 + exp(-x))
     X22=c2_data[X,3]
     XX=c2_data[X,4]
     
-    X31_c2=0.2*A2+0.1*X21+epsilon21
-    X32_c2=0.5*A2+0.1*X22+epsilon22
+    X31_c2=0.2*A2+0.1*X21+epsilon1_2
+    X32_c2=0.5*A2+0.1*X22+epsilon2_2
     A3_regime=(Theta1*X31_c2+Theta2*X32_c2+Theta3*XX)>0.5
-    X41_c2=(0.2*A3_regime+0.1*X31_c2+epsilon31)
-    X42_c2=(0.5*A3_regime+0.1*X32_c2+epsilon32)
+    X41_c2=(0.2*A3_regime+0.1*X31_c2+epsilon1_1)
+    X42_c2=(0.5*A3_regime+0.1*X32_c2+epsilon2_1)
     A4_regime=(Theta1*X41_c2+Theta2*X42_c2+Theta3*XX)>0.5
     
     #term T9_c1
@@ -77,13 +77,13 @@ expit=function(x) 1 / (1 + exp(-x))
     return(c(T7B_c2,T7_c2,T8_c2,T9_c2))
   }
 
-  All_c1=function(X,  epsilon11, epsilon12, 
-                      epsilon21, epsilon22, 
-                      epsilon31, epsilon32, Theta1, Theta2, Theta3, c1_data){
+  All_c1=function(X,  epsilon1_3, epsilon2_3, 
+                      epsilon1_2, epsilon2_2, 
+                      epsilon1_1, epsilon2_1, Theta1, Theta2, Theta3, c1_data){
     #---------------------------------------------------------------------------
     # # This is a helper function for C1_compute()
-    # This computes all  the stage 2 terms that are marginalized 
-    # conditional on information up to stage 1, with treatment being assigned
+    # This computes all  the stage-specific terms that are marginalized 
+    # conditional on information from three stages prior , with treatment being assigned
     # according to theta1, theta2, theta3
     #---------------------------------------------------------------------------
     A1=c1_data[X,1]
@@ -91,14 +91,14 @@ expit=function(x) 1 / (1 + exp(-x))
     X12=c1_data[X,3]
     XX=c1_data[X,4]
     
-    X21_c1=(0.2*A1+0.1*X11+epsilon11)
-    X22_c1=(0.5*A1+0.1*X12+epsilon12)
+    X21_c1=(0.2*A1+0.1*X11+epsilon1_3)
+    X22_c1=(0.5*A1+0.1*X12+epsilon2_3)
     A2_regime=(Theta1*X21_c1+Theta2*X22_c1+Theta3*XX)>0.5
-    X31_c1=(0.2*A2_regime+0.1*X21_c1+epsilon21)
-    X32_c1=(0.5*A2_regime+0.1*X22_c1+epsilon22)
+    X31_c1=(0.2*A2_regime+0.1*X21_c1+epsilon1_2)
+    X32_c1=(0.5*A2_regime+0.1*X22_c1+epsilon2_2)
     A3_regime=(Theta1*X31_c1+Theta2*X32_c1+Theta3*XX)>0.5
-    X41_c1=(0.2*A3_regime+0.1*X31_c1+epsilon31)
-    X42_c1=(0.5*A3_regime+0.1*X32_c1+epsilon32)
+    X41_c1=(0.2*A3_regime+0.1*X31_c1+epsilon1_1)
+    X42_c1=(0.5*A3_regime+0.1*X32_c1+epsilon2_1)
     A4_regime=(Theta1*X41_c1+Theta2*X42_c1+Theta3*XX)>0.5
     
     #term T9_c1
@@ -122,17 +122,20 @@ expit=function(x) 1 / (1 + exp(-x))
    #------------------------------------------------------------------------------------------
    #This function computes all relevant marginalized terms conditional on stage III information
    #------------------------------------------------------------------------------------------
-    All_c3r=t(sapply(X=seq(1,n),FUN=All_c3,epsilon31=epsilon31,epsilon32=epsilon32,
+    All_c3r=t(sapply(X=seq(1,n),FUN=All_c3,epsilon1_1=epsilon31,epsilon2_1=epsilon32,
                      Theta1=Theta1,Theta2=Theta2,Theta3=Theta3,c3_data=c3_data))
     colnames(All_c3r)=c("T10B_c3r","T10_c3r","T11_c3r","T12_c3r")
     
-    if(regime==1){
-    All_c3r_opt=t(sapply(X=seq(1,n),FUN=All_c3,epsilon31=epsilon31,epsilon32=epsilon32,
-                         Theta1=Th1,Theta2=Th2,Theta3=Th3,c3_data=c3_data))
-    colnames(All_c3r_opt)=c("T10B_c3r_opt","T10_c3r_opt","T11_c3r_opt","T12_c3r_opt")
+    if(regime==1){ #when it's a term that involves the optimal regime, but where current stage treatment is assigned
+                   #according to another regime.
+      All_c3r_opt=t(sapply(X=seq(1,n),FUN=All_c3,epsilon1_1=epsilon31,epsilon2_1=epsilon32,
+                           Theta1=Th1,Theta2=Th2,Theta3=Th3,c3_data=c3_data))
+      colnames(All_c3r_opt)=c("T10B_c3r_opt","T10_c3r_opt","T11_c3r_opt","T12_c3r_opt")
     }else{
-    All_c3r_opt=All_c3r_opt_dtr
+      All_c3r_opt=All_c3r_opt_dtr  #These terms have already been computed with the Marginals_At_Opt() function
+                                   #We return them again just for symmetry in the function
     }
+    #there are 8 terms to return
     return(cbind(All_c3r,All_c3r_opt))
   }
 
@@ -147,33 +150,36 @@ expit=function(x) 1 / (1 + exp(-x))
     #This function computes all relevant marginalized terms conditional on stage II information
     #------------------------------------------------------------------------------------------
     
-    All_c2r=t(sapply(X=seq(1,n),FUN=All_c2,
-                     epsilon21=epsilon21,epsilon22=epsilon22,
-                     epsilon31=epsilon31,epsilon32=epsilon32,
-                     Theta1=Theta1,Theta2=Theta2,Theta3=Theta3,c2_data=c2_data))
-    colnames(All_c2r)=c("T10B_c2r","T10_c2r","T11_c2r","T12_c2r")
+      All_c2r=t(sapply(X=seq(1,n),FUN=All_c2,
+                       epsilon1_2=epsilon21,epsilon2_2=epsilon22,
+                       epsilon1_1=epsilon31,epsilon2_1=epsilon32,
+                       Theta1=Theta1,Theta2=Theta2,Theta3=Theta3,c2_data=c2_data))
+      colnames(All_c2r)=c("T10B_c2r","T10_c2r","T11_c2r","T12_c2r")
+      
+      All9_c2r=t(sapply(X=seq(1,n),FUN=All_c3,
+                        epsilon1_1=epsilon21,epsilon2_1=epsilon22,
+                        Theta1=Theta1,Theta2=Theta2,Theta3=Theta3,c3_data=c2_data))
+      colnames(All9_c2r)=c("T7B_c2r","T7_c2r","T8_c2r","T9_c2r")
     
-    All9_c2r=t(sapply(X=seq(1,n),FUN=All_c3,
-                      epsilon31=epsilon21,epsilon32=epsilon22,
-                      Theta1=Theta1,Theta2=Theta2,Theta3=Theta3,c3_data=c2_data))
-    colnames(All9_c2r)=c("T7B_c2r","T7_c2r","T8_c2r","T9_c2r")
     
-    
-    if(regime==1){
+    if(regime==1){ #when it's a term that involves the optimal regime, but where current stage treatment is assigned
+                   #according to another regime.
       All_c2r_opt=t(sapply(X=seq(1,n),FUN=All_c2,
-                           epsilon21=epsilon21,epsilon22=epsilon22,
-                           epsilon31=epsilon31,epsilon32=epsilon32,
+                           epsilon1_2=epsilon21,epsilon2_2=epsilon22,
+                           epsilon1_1=epsilon31,epsilon2_1=epsilon32,
                            Theta1=Th1,Theta2=Th2,Theta3=Th3,c2_data=c2_data))
       colnames(All_c2r_opt)=c("T10B_c2r_opt","T10_c2r_opt","T11_c2r_opt","T12_c2r_opt")
       
       All9_c2r_opt=t(sapply(X=seq(1,n),FUN=All_c3,
-                            epsilon31=epsilon21,epsilon32=epsilon22,
+                            epsilon1_1=epsilon21,epsilon2_1=epsilon22,
                             Theta1=Th1,Theta2=Th2,Theta3=Th3,c3_data=c2_data))
       colnames(All9_c2r_opt)=c("T7B_c2r_opt","T7_c2r_opt","T8_c2r_opt","T9_c2r_opt")
     }else{
-      All_c2r_opt=All_c2r_opt_dtr
-      All9_c2r_opt=All9_c2r_opt_dtr
+      All_c2r_opt=All_c2r_opt_dtr    #These terms have already been computed with the Marginals_At_Opt() function
+                                     #We return them again just for symmetry in the function
+      All9_c2r_opt=All9_c2r_opt_dtr  
     }
+    #there are 16 terms to return
     return(cbind(All_c2r,All9_c2r,All_c2r_opt,All9_c2r_opt))
   }
 
@@ -190,49 +196,54 @@ expit=function(x) 1 / (1 + exp(-x))
     #This function computes all relevant marginalized terms conditional on stage I information
     #------------------------------------------------------------------------------------------
     All_c1r=t(sapply(X=seq(1,n),FUN=All_c1,
-                     epsilon11=epsilon11,epsilon12=epsilon12,
-                     epsilon21=epsilon21,epsilon22=epsilon22,
-                     epsilon31=epsilon31,epsilon32=epsilon32,
+                     epsilon1_3=epsilon11,epsilon2_3=epsilon12,
+                     epsilon1_2=epsilon21,epsilon2_2=epsilon22,
+                     epsilon1_1=epsilon31,epsilon2_1=epsilon32,
                      Theta1=Theta1,Theta2=Theta2,Theta3=Theta3,c1_data=c1_data))
     colnames(All_c1r)=c("T10B_c1r","T10_c1r","T11_c1r","T12_c1r")
     #------------
     All9_c1r=t(sapply(X=seq(1,n),FUN=All_c2,
-                      epsilon21=epsilon11,epsilon22=epsilon12,
-                      epsilon31=epsilon21,epsilon32=epsilon22,
+                      epsilon1_2=epsilon11,epsilon2_2=epsilon12,
+                      epsilon1_1=epsilon21,epsilon2_1=epsilon22,
                       Theta1=Theta1,Theta2=Theta2,Theta3=Theta3,c2_data=c1_data))
     colnames(All9_c1r)=c("T7B_c1r","T7_c1r","T8_c1r","T9_c1r")
     #------------
     All6_c1r=t(sapply(X=seq(1,n),FUN=All_c3,
-                      epsilon31=epsilon11,epsilon32=epsilon12,
+                      epsilon1_1=epsilon11,epsilon2_1=epsilon12,
                       Theta1=Theta1,Theta2=Theta2,Theta3=Theta3,c3_data=c1_data))
     colnames(All6_c1r)=c("T4B_c1r","T4_c1r","T5_c1r","T6_c1r")
     
-    if(regime==1){
+    if(regime==1){ #when it's a term that involves the optimal regime, but where current stage treatment is assigned
+                   #according to another regime.
       All_c1r_opt=t(sapply(X=seq(1,n),FUN=All_c1,
-                           epsilon11=epsilon11, epsilon12=epsilon12,
-                           epsilon21=epsilon21,epsilon22=epsilon22,
-                           epsilon31=epsilon31,epsilon32=epsilon32,
+                           epsilon1_3=epsilon11,epsilon2_3=epsilon12,
+                           epsilon1_2=epsilon21,epsilon2_2=epsilon22,
+                           epsilon1_1=epsilon31,epsilon2_1=epsilon32,
                            Theta1=Th1,Theta2=Th2,Theta3=Th3,c1_data=c1_data))
       colnames(All_c1r_opt)=c("T10B_c1r_opt","T10_c1r_opt","T11_c1r_opt","T12_c1r_opt")
       
       #------------
       All9_c1r_opt=t(sapply(X=seq(1,n),FUN=All_c2,
-                            epsilon21=epsilon11,epsilon22=epsilon12,
-                            epsilon31=epsilon21,epsilon32=epsilon22,
+                            epsilon1_2=epsilon11,epsilon2_2=epsilon12,
+                            epsilon1_1=epsilon21,epsilon2_1=epsilon22,
                             Theta1=Th1,Theta2=Th2,Theta3=Th3,c2_data=c1_data))
       colnames(All9_c1r_opt)=c("T7B_c1r_opt","T7_c1r_opt","T8_c1r_opt","T9_c1r_opt")
       #------------
       All6_c1r_opt=t(sapply(X=seq(1,n),FUN=All_c3,
-                            epsilon31=epsilon11,epsilon32=epsilon12,
+                            epsilon1_1=epsilon11,epsilon2_1=epsilon12,
                             Theta1=Th1,Theta2=Th2,Theta3=Th3,c3_data=c1_data))
       colnames(All6_c1r_opt)=c("T4B_c1r_opt","T4_c1r_opt","T5_c1r_opt","T6_c1r_opt")
-    }else{All_c1r_opt=All_c1r_opt_dtr
-    All9_c1r_opt=All9_c1r_opt_dtr
-    All6_c1r_opt=All6_c1r_opt_dtr}
+    }else{
+      All_c1r_opt=All_c1r_opt_dtr           #These terms have already been computed with the Marginals_At_Opt() function
+                                            #We return them again just for symmetry in the function
+      All9_c1r_opt=All9_c1r_opt_dtr
+      All6_c1r_opt=All6_c1r_opt_dtr}
+    
+    #there are 24 terms to return
     return(cbind(All_c1r,All9_c1r,All6_c1r, All_c1r_opt, All9_c1r_opt, All6_c1r_opt))
   }
 
-  Marginals_At_Opt=function(XX,  X11,X12, A1, A1_opt,
+  Marginals_At_Opt=function(XX, X11,X12, A1, A1_opt,
                                 X21,X22, A2, A2_opt,
                                 X31,X32, A3, A3_opt,
                                 X41,X42, A4, A4_opt, 
@@ -243,45 +254,49 @@ expit=function(x) 1 / (1 + exp(-x))
                                 epsilon31, epsilon32){
     # This function computes the expected value of terms in the data-generating process
     # conditional on stage 3, stage 2, and stage 1 information. 
-    # when treatment is assigned according to the optimal regime. 
+    # when treatment is assigned according to the optimal regime at the stage of marginalization.
+    # And when previous stage treatment varies as in the study population 
+    # When previous stage treatment varies according to a specific regime, then these terms must be computed separately.
     
     c3_data=cbind(A3,X31,X32,XX)
     c2_data=cbind(A2,X21,X22,XX)
     c1_data=cbind(A1,X11,X12,XX)
     #---------------Conditional on 3
-    
-    All_c3r_opt_dtr=t(sapply(X=seq(1,n),FUN=All_c3,epsilon31=epsilon31,epsilon32=epsilon32,
+        #there are a total of four terms that need to be marginalized 
+    All_c3r_opt_dtr=t(sapply(X=seq(1,n),FUN=All_c3,epsilon1_1=epsilon31,epsilon2_1=epsilon32,
                          Theta1=Th1,Theta2=Th2,Theta3=Th3,c3_data=c3_data))
     colnames(All_c3r_opt_dtr)=c("T10B_c3r_opt","T10_c3r_opt","T11_c3r_opt","T12_c3r_opt")
     
     #---------------Conditional on 2
+       #there are a total of eight terms that need to be marginalized
     All_c2r_opt_dtr=t(sapply(X=seq(1,n),FUN=All_c2,
-                         epsilon21=epsilon21,epsilon22=epsilon22,
-                         epsilon31=epsilon31,epsilon32=epsilon32,
+                         epsilon1_2=epsilon21,epsilon2_2=epsilon22,
+                         epsilon1_1=epsilon31,epsilon2_1=epsilon32,
                          Theta1=Th1,Theta2=Th2,Theta3=Th3,c2_data=c2_data))
     colnames(All_c2r_opt_dtr)=c("T10B_c2r_opt","T10_c2r_opt","T11_c2r_opt","T12_c2r_opt")
     
     All9_c2r_opt_dtr=t(sapply(X=seq(1,n),FUN=All_c3,
-                          epsilon31=epsilon21,epsilon32=epsilon22,
+                          epsilon1_1=epsilon21,epsilon2_1=epsilon22,
                           Theta1=Th1,Theta2=Th2,Theta3=Th3,c3_data=c2_data))
     colnames(All9_c2r_opt_dtr)=c("T7B_c2r_opt","T7_c2r_opt","T8_c2r_opt","T9_c2r_opt")
     
     #--------Conditional on 1---------
+      #there are a total of 12 terms that need to be marginalized
     All_c1r_opt_dtr=t(sapply(X=seq(1,n),FUN=All_c1,
-                         epsilon11=epsilon11, epsilon12=epsilon12,
-                         epsilon21=epsilon21,epsilon22=epsilon22,
-                         epsilon31=epsilon31,epsilon32=epsilon32,
+                             epsilon1_3=epsilon11,epsilon2_3=epsilon12,
+                             epsilon1_2=epsilon21,epsilon2_2=epsilon22,
+                             epsilon1_1=epsilon31,epsilon2_1=epsilon32,
                          Theta1=Th1,Theta2=Th2,Theta3=Th3,c1_data=c1_data))
     colnames(All_c1r_opt_dtr)=c("T10B_c1r_opt","T10_c1r_opt","T11_c1r_opt","T12_c1r_opt")
     #------------
     All9_c1r_opt_dtr=t(sapply(X=seq(1,n),FUN=All_c2,
-                          epsilon21=epsilon11,epsilon22=epsilon12,
-                          epsilon31=epsilon21,epsilon32=epsilon22,
+                          epsilon1_2=epsilon11,epsilon2_2=epsilon12,
+                          epsilon1_1=epsilon21,epsilon2_1=epsilon22,
                           Theta1=Th1,Theta2=Th2,Theta3=Th3,c2_data=c1_data))
     colnames(All9_c1r_opt_dtr)=c("T7B_c1r_opt","T7_c1r_opt","T8_c1r_opt","T9_c1r_opt")
     #------------
     All6_c1r_opt_dtr=t(sapply(X=seq(1,n),FUN=All_c3,
-                          epsilon31=epsilon11,epsilon32=epsilon12,
+                          epsilon1_1=epsilon11,epsilon2_1=epsilon12,
                           Theta1=Th1,Theta2=Th2,Theta3=Th3,c3_data=c1_data))
     colnames(All6_c1r_opt_dtr)=c("T4B_c1r_opt","T4_c1r_opt","T5_c1r_opt","T6_c1r_opt")
     
@@ -322,6 +337,7 @@ Value_Each=function(XX,  X11,X12, A1, A1_Opt,
                        epsilon31=epsilon31, epsilon32=epsilon32, 
                        All_c3r_opt_dtr=All_c3r_opt_dtr)
     
+    #producing terms needed to compute pseudo outcome
     c3_regime_data=cbind(A3_regime,X31,X32,XX)
     All_c3r_regime=c3_compute(c3_data=c3_regime_data,regime=1,
                               Theta1=Theta1,Theta2=Theta2,Theta3=Theta3,
@@ -344,6 +360,8 @@ Value_Each=function(XX,  X11,X12, A1, A1_Opt,
                        epsilon21=epsilon21, epsilon22=epsilon22,
                        epsilon31=epsilon31, epsilon32=epsilon32, 
                        All_c2r_opt_dtr=All_c2r_opt_dtr, All9_c2r_opt_dtr=All9_c2r_opt_dtr)
+    
+    #producing terms needed to compute pseudo outcome and phis
     c2_regime_data=cbind(A2_regime,X21,X22,XX)
     All_c2r_regime=c2_compute(c2_data=c2_regime_data,regime=1,
                               Theta1=Theta1,Theta2=Theta2,Theta3=Theta3,
@@ -368,6 +386,8 @@ Value_Each=function(XX,  X11,X12, A1, A1_Opt,
                        epsilon21=epsilon21, epsilon22=epsilon22,
                        epsilon31=epsilon31, epsilon32=epsilon32, 
                        All_c1r_opt_dtr=All_c1r_opt_dtr, All9_c1r_opt_dtr=All9_c1r_opt_dtr, All6_c1r_opt_dtr=All6_c1r_opt_dtr)
+    
+    #producing terms needed to compute phis
     c1_regime_data=cbind(A1_regime,X11,X12,XX)
     All_c1r_regime=c1_compute(c1_regime_data,regime=1,
                               Theta1=Theta1,Theta2=Theta2,Theta3=Theta3,
@@ -406,10 +426,10 @@ Value_Each=function(XX,  X11,X12, A1, A1_Opt,
              X41:A4     +X42:A4     +XX:A4    +A4,data=Dat_c4,weights=richi)
     
     pseudo_outcome4=predict(om4, newdata=data.frame(XX=XX,
-                                                    A1_Opt=A1_Opt, A1=A1,       X11=X11,X12=X12,
-                                                    A2_Opt=A2_Opt, A2=A2,             X21=X21,X22=X22,
-                                                    A3_Opt=A3_Opt, A3=A3,      X31=X31,X32=X32,
-                                                    A4_Opt=A4_Opt, A4=A4_regime,      X41=X41,X42=X42)) 
+                                                    A1_Opt=A1_Opt, A1=A1,        X11=X11,X12=X12,
+                                                    A2_Opt=A2_Opt, A2=A2,        X21=X21,X22=X22,
+                                                    A3_Opt=A3_Opt, A3=A3,        X31=X31,X32=X32,
+                                                    A4_Opt=A4_Opt, A4=A4_regime, X41=X41,X42=X42)) 
     ############################################################################
     # Fitting Stage 3 model and computing pseudo-outcome
     ############################################################################
@@ -548,7 +568,7 @@ Value_Each=function(XX,  X11,X12, A1, A1_Opt,
       (C1_d)*(C2_d)*(C3_d)*(C4_d)*(1/(p4_d_24*p3_d_24*p2_d_24*p1_d_24))*(Y      -phi4_34)
     
     #returning final values
-    IPWv[b]=mean(richi*C1_d*C2_d*C3_d*C4_d*Y/(p1_d_24*p2_d_24*p3_d_24*p4_d_24))
+    IPWv[b]=mean(richi*C1_d*C2_d*C3_d*C4_d*Y/(p1_d_24*p2_d_24*p3_d_24*p4_d_24)) #note that richi have been multiplied by n in the Bayesian case to cancel out the division by n in this mean
     DR4v[b]=mean(richi*AugY4)
   }
     if(B==1){
@@ -572,6 +592,7 @@ IPW_Est=array(0,dim=c(R,B,nrow(theta)))
 
 for(repi in 1:R){
   set.seed(repi)
+  #Note: the implemented code is tailored to the data-generating mechanism presented below. 
   start_time <- Sys.time()
   
   #Generating Data for each replicate
@@ -602,22 +623,22 @@ for(repi in 1:R){
     (0.5*X31+0.5*X32+0.1*XX-0.5)*(A3_Opt-A3)-
     (0.5*X41+0.5*X42+0.1*XX-0.5)*(A4_Opt-A4)+rand_comp
   
-  epsilon11=rnorm(MM,sd=1)
+  epsilon11=rnorm(MM,sd=1)  #randomo components of stage I terms
   epsilon12=rnorm(MM,sd=1)
   
-  epsilon21=rnorm(MM,sd=1)
+  epsilon21=rnorm(MM,sd=1)  #random components of stage II terms
   epsilon22=rnorm(MM,sd=1)
   
-  epsilon31=rnorm(MM,sd=1)
+  epsilon31=rnorm(MM,sd=1)  #random components of stage III terms
   epsilon32=rnorm(MM,sd=1)
   
   
   #for each replication, we only need to compute the marginals
   #conditional on stage i information once
-  Mar_opt_dtr=Marginals_At_Opt(XX=XX,X11=X11,X12=X12, A1=A1, A1_opt, 
-                 X21=X21,X22=X22, A2=A2, A2_opt,
-                 X31=X31,X32=X32, A3=A3, A3_opt,
-                 X41=X41,X42=X42, A4=A4, A4_opt, 
+  Mar_opt_dtr=Marginals_At_Opt(XX=XX,X11=X11,X12=X12, A1=A1, A1_opt=A1_opt, 
+                 X21=X21,X22=X22, A2=A2, A2_opt=A2_opt,
+                 X31=X31,X32=X32, A3=A3, A3_opt=A3_opt,
+                 X41=X41,X42=X42, A4=A4, A4_opt=A4_opt, 
                  Th1=0.5, Th2=0.5, Th3=.1,
                  epsilon11=epsilon11, epsilon12=epsilon12,
                  epsilon21=epsilon21, epsilon22=epsilon22, 
@@ -676,8 +697,4 @@ if(B==1){
 }
 
 
-Daty=rbind(c(mean(theta[DR_max[2,],1]) ,sd(theta[DR_max[2,],1]),mean(theta[DR_max[2,],2]),sd(theta[DR_max[2,],2]),mean(DR_max[1,]),sd(DR_max[1,])),
-      c(mean(theta[IPW_max[2,],1]),sd(theta[IPW_max[2,],1]),mean(theta[IPW_max[2,],2]),sd(theta[IPW_max[2,],2]),mean(IPW_max[1,]),sd(IPW_max[1,])))
-
-# write.csv(Daty, paste("Program1_",MM,".csv",sep=""))
 
