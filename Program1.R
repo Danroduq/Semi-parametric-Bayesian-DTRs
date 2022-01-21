@@ -77,17 +77,15 @@ to_produce=function(Th1,Th2){
   for(i in 1:R){
     set.seed(i)
     rand_comp=rnorm(n, 0, 0.5)  # Random error in Y
-    X1 = rnorm(n)  
-    A1 = rbinom(n, 1, expit(1.5*X1))  
+    X1=rnorm(n)  
+    A1=rbinom(n, 1, expit(1.5*X1))  
     A1_Opt = as.numeric(X1 >Th1) 
     X2=rnorm(n,A1+0.5*X1,sd=1)
     A2=rbinom(n, 1, expit(2*X2-0.5*A1))
     A2_Opt=as.numeric(X2>Th2)
     
     Y=X1 -(-Th1+X1)*(A1_Opt-A1)-(-Th2+X2)*(A2_Opt-A2)+rand_comp
-    
     extract=extra_term_compute(A1,X1, Th1, Th2) #We are right away able to compute over the terms that marginalize over the optimal regime
-
     attach(extract)
     dati[,,i]=cbind(X1,A1,A1_Opt,X2,A2,A2_Opt,Y,T1_ev,T3_ev)
     detach(extract)
