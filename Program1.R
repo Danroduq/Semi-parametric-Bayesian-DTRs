@@ -6,6 +6,12 @@
 rm(list=ls(all=TRUE))
 library(gtools) #this library allows us to draw from the Dirichlet distribution
 
+#NOTE: the program below attaches some datasets,
+#        please make sure to detach all datasets if running is interrupted
+#        (this can be done by restarting the r-session), 
+#        so as to avoid any warning messages. 
+        
+   
 #-------------------------------------------------------------------------------
 # Producing results Table 1
 #
